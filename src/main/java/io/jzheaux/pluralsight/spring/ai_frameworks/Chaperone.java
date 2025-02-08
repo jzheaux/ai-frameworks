@@ -17,7 +17,13 @@ public class Chaperone {
     private final ChatClient chat;
 
     public Chaperone(ChatClient.Builder builder) {
-        this.chat = builder.build();
+        this.chat = builder
+            .defaultSystem("""
+                Please act as if you are a chaperone for a group of high school students from Brookside High School.
+                They are visiting San Francisco and have occasional free time where they will ask
+                you for suggestions for what to do.
+                """)
+        .build();
     }
 
     public String chat(String chatId, String message) {
