@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.UUID;
 
+import org.springframework.ai.reader.TextReader;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -16,24 +19,22 @@ import org.springframework.core.io.Resource;
 public class AiFrameworksApplication implements CommandLineRunner {
 
 	private final Chaperone chaperone;
-	private final List<Resource> resources;
 
 	private String chatId = UUID.randomUUID().toString();
 	private Map<String, String> chats = new LinkedHashMap<>();
 
 	public AiFrameworksApplication(Chaperone chaperone,
+			VectorStore vectors,
 			@Value("classpath:rag/*.txt") List<Resource> resources) {
 		this.chaperone = chaperone;
-		this.resources = resources;
+		resources.forEach((resource) -> {
+			vectors.add(new TokenTextSplitter().apply(new TextReader(resource).read()));
+		});
 	}
 
 	@Override
 	public void run(String... args) throws Exception {
-		populateVectorStore();
 		runApp();
-	}
-
-	private void populateVectorStore() {
 	}
 
 	private void runApp() {
