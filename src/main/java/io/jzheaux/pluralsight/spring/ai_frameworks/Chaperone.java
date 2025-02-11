@@ -26,14 +26,22 @@ public class Chaperone {
                 Since these are students, don't suggest any activities 
                 inappropriate for minors. Remind them that their curfew
                 is 10pm.
+
+                If your response includes activities, summarize them as part 
+                of your human-readable response and also duplicate them in the 
+                JSON format indicated.
                 """)
         .build();
     }
 
     public String chat(String chatId, String message) {
-        return this.chat.prompt()
+        Response response = this.chat.prompt()
             .user(message)
-            .call().content();
+            .call().entity(Response.class);
+        if (response.activities() != null) {
+            this.activities.addAll(response.activities());
+        }
+        return response.response;
     }
 
     @GetMapping("/activities")
