@@ -40,9 +40,11 @@ public class Chaperone {
                 Make sure to tell the students how much the activity costs, including
                 any public transit from their hotel, how far away it is, and
                 any other preparation steps you'd recommend, like dressing for the weather.
+
+                Record any feedback that the student gives us using the provided function.
                 """)
         .defaultAdvisors(List.of(new QuestionAnswerAdvisor(vectors)))
-        .defaultFunctions("getWeatherConditions")
+        .defaultFunctions("getWeatherConditions", "saveStudentFeedback")
         .build();
     }
 
