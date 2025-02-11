@@ -1,5 +1,6 @@
 package io.jzheaux.pluralsight.spring.ai_frameworks;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,18 +28,27 @@ public class Chaperone {
 
                 Your suggestions MUST honor school policy, including curfew,
                 MUST resonably fit into the free time indicated in the itinerary,
+                SHOULD be compatible with the weather,
                 and SHOULD stick to the list of pre-approved activities.
+
+                Use the provided function to check the weather. The current date is ${date}.
 
                 If your response includes activities, summarize them as part 
                 of your human-readable response and also duplicate them in the 
                 JSON format indicated.
+
+                Make sure to tell the students how much the activity costs, including
+                any public transit from their hotel, how far away it is, and
+                any other preparation steps you'd recommend, like dressing for the weather.
                 """)
         .defaultAdvisors(List.of(new QuestionAnswerAdvisor(vectors)))
+        .defaultFunctions("getWeatherConditions")
         .build();
     }
 
     public String chat(String chatId, String message) {
         Response response = this.chat.prompt()
+            .system((prompt) -> prompt.param("date", LocalDate.now().toString()))
             .user(message)
             .call().entity(Response.class);
         if (response.activities() != null) {
