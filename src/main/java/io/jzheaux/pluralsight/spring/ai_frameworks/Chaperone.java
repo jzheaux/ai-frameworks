@@ -1,11 +1,16 @@
 package io.jzheaux.pluralsight.spring.ai_frameworks;
 
+import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
+import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,7 +24,7 @@ public class Chaperone {
 
     private final ChatClient chat;
 
-    public Chaperone(ChatClient.Builder builder, VectorStore vectors) {
+    public Chaperone(ChatClient.Builder builder, VectorStore vectors, ChatMemory chats) {
         this.chat = builder
             .defaultSystem("""
                 Please act as if you are a chaperone for a group of high school students from Brookside High School.
@@ -30,6 +35,10 @@ public class Chaperone {
                 MUST resonably fit into the free time indicated in the itinerary,
                 SHOULD be compatible with the weather,
                 and SHOULD stick to the list of pre-approved activities.
+
+                Consult your memory of that student so as to NOT
+                suggest things that they've told you they don't like or
+                that they have already done.
 
                 Use the provided function to check the weather. The current date is ${date}.
 
@@ -42,8 +51,13 @@ public class Chaperone {
                 any other preparation steps you'd recommend, like dressing for the weather.
 
                 Record any feedback that the student gives us using the provided function.
+
+                Above all, remember that they are students and may be both nervous and
+                excited about travelling to a new place. They'll need help. If they ask,
+                give them directions for how to get to the activities you've suggested.
+                Help them understand if their plans aren't realistic. And help them have fun!
                 """)
-        .defaultAdvisors(List.of(new QuestionAnswerAdvisor(vectors)))
+        .defaultAdvisors(List.of(new QuestionAnswerAdvisor(vectors), new PromptChatMemoryAdvisor(chats)))
         .defaultFunctions("getWeatherConditions", "saveStudentFeedback")
         .build();
     }
@@ -51,6 +65,9 @@ public class Chaperone {
     public String chat(String chatId, String message) {
         Response response = this.chat.prompt()
             .system((prompt) -> prompt.param("date", LocalDate.now().toString()))
+            .advisors((a) -> a
+                .param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
             .user(message)
             .call().entity(Response.class);
         if (response.activities() != null) {
